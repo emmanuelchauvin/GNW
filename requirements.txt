@@ -1,0 +1,6 @@
+openai
+python-dotenv
+httpx
+streamlit
+google-genai
+ollama
