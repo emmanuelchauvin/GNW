@@ -69,6 +69,7 @@ The `IgnitionEngine` orchestrates the cognitive cycle:
 
 ## 🚀 Usage
 
+### Interface en ligne de commande
 ```python
 import asyncio
 from api_bridge import MiniMaxBridge
@@ -86,6 +87,14 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+### Interface Visuelle (Streamlit)
+Pour lancer le tableau de bord interactif et visualiser le cycle cognitif en temps réel :
+
+```bash
+streamlit run dashboard.py
+```
+Cela ouvrira votre navigateur à l'adresse `http://localhost:8501`. Vous pourrez y configurer votre clé API, choisir le moteur de vision et injecter des stimuli textuels et visuels.
 
 ## 📂 Project Structure
 
