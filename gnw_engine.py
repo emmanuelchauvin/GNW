@@ -26,7 +26,7 @@ from modules_inconscients import (
     Moniteur,
     VisionModule,
 )
-from api_bridge import MiniMaxBridge, OllamaVisionBridge
+from api_bridge import MiniMaxBridge, OllamaVisionBridge, OpenRouterVisionBridge
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class IgnitionEngine:
             print(workspace.summary())
     """
 
-    def __init__(self, bridge: MiniMaxBridge) -> None:
+    def __init__(self, bridge: MiniMaxBridge, vision_provider: str = "ollama") -> None:
         self._bridge = bridge
         self._workspace = GlobalWorkspace()
 
@@ -95,17 +95,22 @@ class IgnitionEngine:
         ]
         self._monitor = Moniteur(bridge)
         
-        # Vision Module (Ollama / Gemma 3)
+        # Vision Module (Ollama / OpenRouter)
+        self._has_vision = False
         try:
-            self._vision_bridge = OllamaVisionBridge()
-            self._vision_module = VisionModule(bridge, self._vision_bridge)
-            self._has_vision = True
-            logger.info("👁️  Module Vision (Ollama/Gemma3) activé.")
-        except ImportError:
-            self._has_vision = False
-            logger.warning("⚠️  Module Vision désactivé ('ollama' manquant).")
+            if vision_provider == "openrouter":
+                self._vision_bridge = OpenRouterVisionBridge()
+                self._vision_module = VisionModule(bridge, self._vision_bridge)
+                self._has_vision = True
+                logger.info("👁️  Module Vision (OpenRouter/Nemotron) activé.")
+            else:
+                self._vision_bridge = OllamaVisionBridge()
+                self._vision_module = VisionModule(bridge, self._vision_bridge)
+                self._has_vision = True
+                logger.info("👁️  Module Vision (Ollama/Gemma3) activé.")
+        except ImportError as e:
+            logger.warning(f"⚠️  Module Vision désactivé (Dépendance manquante: {e}).")
         except Exception as e:
-            self._has_vision = False
             logger.warning(f"⚠️  Module Vision désactivé (Erreur init: {e}).")
 
         logger.info(

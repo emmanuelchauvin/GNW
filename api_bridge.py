@@ -14,6 +14,7 @@ Features:
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -235,6 +236,82 @@ class MiniMaxBridge:
             f"Last error: {last_exception}"
         )
 
+
+# ---------------------------------------------------------------------------
+# OpenRouter Vision Bridge
+# ---------------------------------------------------------------------------
+
+_OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1"
+_OPENROUTER_VISION_MODEL = "nvidia/nemotron-nano-12b-v2-vl:free"
+
+class OpenRouterVisionBridge:
+    """Async bridge to OpenRouter for Vision (Nemotron Nano 12B).
+    
+    Uses OpenAI-compatible API to send images to OpenRouter.
+    """
+    
+    def __init__(self, api_key: str | None = None, model: str = _OPENROUTER_VISION_MODEL):
+        self.api_key = api_key or os.getenv("OPENROUTER_KEY")
+        if not self.api_key:
+            raise ValueError("OpenRouter API Key (OPENROUTER_KEY) is required.")
+        
+        self.model_name = model
+        self.endpoint = _OPENROUTER_ENDPOINT
+
+    async def analyze_image(
+        self, 
+        image_bytes: bytes, 
+        prompt: str, 
+        mime_type: str = "image/jpeg"
+    ) -> str:
+        """Analyze an image using OpenRouter and return textual analysis."""
+        
+        # Encode image to base64
+        base64_image = base64.b64encode(image_bytes).decode('utf-8')
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "HTTP-Referer": "https://github.com/emmanuelchauvin/GNW", # Required by OpenRouter
+            "X-Title": "GNW Engine",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        try:
+            logger.info(f"👁️ Appel OpenRouter ({self.model_name})...")
+            import httpx
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    self.endpoint + "/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data['choices'][0]['message']['content']
+        except Exception as e:
+            logger.error(f"OpenRouter Vision error: {e}")
+            return f"Echec vision (OpenRouter) : {e}"
 
 # ---------------------------------------------------------------------------
 # Ollama Vision Bridge

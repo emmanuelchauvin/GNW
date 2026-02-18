@@ -73,6 +73,16 @@ with st.sidebar:
             os.environ["MINIMAX_KEY"] = api_key_input
 
     st.markdown("---")
+    st.subheader("Moteur de Vision")
+    vision_provider = st.radio(
+        "Choisir le moteur",
+        ["Ollama (Local)", "OpenRouter (Cloud)"],
+        index=0,
+        help="Ollama utilise Gemma 3 en local. OpenRouter utilise Nemotron Nano 12B VL."
+    )
+    vision_provider_code = "ollama" if "Ollama" in vision_provider else "openrouter"
+
+    st.markdown("---")
     st.subheader("Paramètres Boucle")
     max_iters = st.slider("Max Itérations", 1, 10, 5)
     target_certainty = st.slider("Cible Certitude (%)", 50, 100, 90)
@@ -117,7 +127,7 @@ async def run_autonomous_loop(initial_text, image_bytes, api_key):
     
     try:
         async with MiniMaxBridge(api_key=api_key) as bridge:
-            engine = IgnitionEngine(bridge)
+            engine = IgnitionEngine(bridge, vision_provider=vision_provider_code)
             
             step_count = 0
             
